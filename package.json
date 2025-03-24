@@ -1,0 +1,23 @@
+{
+  "name": "bridge-contract",
+  "version": "0.1.0",
+  "description": "PBG's bridge contract validators for Cardano",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npx hl2ts --out-dir ./dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PBGToken/bridge-contract.git"
+  },
+  "author": "Christian Schmitz",
+  "license": "AGPLv3",
+  "bugs": {
+    "url": "https://github.com/PBGToken/bridge-contract/issues"
+  },
+  "homepage": "https://github.com/PBGToken/bridge-contract#readme",
+  "dependencies": {
+    "@helios-lang/compiler": "^0.17.11",
+    "@helios-lang/contract-utils": "^0.3.16"
+  }
+}

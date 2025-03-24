@@ -1,0 +1,5 @@
+mixed registration_validator
+
+func main(_: MixedArgs) -> () {
+    ()
+}

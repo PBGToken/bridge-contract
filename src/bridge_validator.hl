@@ -1,0 +1,5 @@
+mixed bridge_validator
+
+func main(_: MixedArgs) -> () {
+    ()
+}
