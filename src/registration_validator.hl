@@ -1,5 +1,94 @@
 mixed registration_validator
 
-func main(_: MixedArgs) -> () {
-    ()
+import { get_current_input, tx } from ScriptContext
+
+// Ensures uniqueness of a BridgeRegistration UTxO.
+// Each reserves_network+reserves_address can only be used once,
+// and each bridge_validator can only be used once.
+// Newer duplicates can be destroyed by anyone.
+// Tokens minted by this policy must be sent to the address.
+
+struct BridgeRegistration {
+    reserves_network: String // "Bitcoin", "Ethereum", etc.
+    reserves_address: String // must correspond to address format in metadata
+    bridge_validator: ScriptHash
+    timestamp: Time
+
+    func key(self) -> ByteArray {
+        (self.reserves_network.encode_utf8() + self.reserves_address.encode_utf8()).blake2b()
+    }
+}
+
+const mph: MintingPolicyHash = MintingPolicyHash::from_script_hash(Scripts::registration_validator)
+const address: Address = Address::new(
+    SpendingCredential::new_validator(
+        ValidatorHash::from_script_hash(
+            Scripts::registration_validator
+        )
+    ),
+    Option[StakingCredential]::None
+)
+const min_deposit = 100_000_000 // 100 ADA
+
+func validate_destroy_duplicate(key: ByteArray, registration: BridgeRegistration) -> () {
+    asset_class = AssetClass::new(mph, key);
+    minted_qty = tx.minted.get(asset_class);
+
+    duplicate_utxo = tx.ref_inputs.find((input: TxInput) -> {
+        input.address == address
+    });
+    duplicate_registration = duplicate_utxo.datum.inline.as[BridgeRegistration];
+
+    assert(minted_qty == -1, "policy token must be burned when spent");
+    assert(duplicate_utxo.value.get(asset_class) > 0, "ref utxo at registration address doesn't contain same registration token");
+    assert(registration.timestamp >= duplicate_registration.timestamp, "duplicate timestamp not older than current registration timestamp")
+}
+
+func validate_mint_registration(key: ByteArray) -> () {
+    asset_class = AssetClass::new(mph, key);
+    registration_utxo = tx.outputs.find((output: TxOutput) -> {
+        output.address == address
+    });
+    registration = registration_utxo.datum.inline.as_strictly[BridgeRegistration];
+
+    assert(registration_utxo.value.get(asset_class) == 1, "registration output doesn't contain token");
+    assert(registration.timestamp >= tx.time_range.end, "registration timestamp not after tx time range end");
+    assert(registration.key() == key, "token name doesn't correspond to hash of reserves address");
+    assert(registration_utxo.value.get_lovelace() >= min_deposit, "registration doesn't contain enough ada")
+}
+
+func main(args: MixedArgs) -> () {
+    args.switch{
+        Spending => {
+            utxo = get_current_input();
+            registration = utxo.datum.inline.as[BridgeRegistration];
+            tokens = utxo.value.get_policy(mph);
+
+            if (tokens.is_empty()) {
+                // UTxOs that don't contain any tokens from current policy can always be spent.
+                // This can be used to remove garbage.
+                ()
+            } else {
+                (key, _) = tokens.head;
+                
+                validate_destroy_duplicate(key, registration)
+            }
+        },
+        Other => {
+            tokens = tx.minted.get_policy(mph);
+
+            (key, qty) = tokens.head;
+
+            assert(tokens.tail.is_empty(), "only one key can be minted or burned at a time");
+
+            if (qty == -1) {
+                // burn is witnessed by spending as well, so we don't additional checks here
+                ()
+            } else if (qty == 1) {
+                validate_mint_registration(key)
+            } else {
+                error("can only mint or burn one token at time")
+            }
+        }
+    }
 }

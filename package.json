@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/PBGToken/bridge-contract#readme",
   "dependencies": {
-    "@helios-lang/compiler": "^0.17.11",
-    "@helios-lang/contract-utils": "^0.3.16"
+    "@helios-lang/compiler": "0.17.12",
+    "@helios-lang/contract-utils": "^0.3.17"
   }
 }
