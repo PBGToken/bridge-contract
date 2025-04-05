@@ -9,3 +9,5 @@ src
 *.test.d.ts
 *.test.d.ts.map
 test
+*.bin
+bundle_ethereum.js

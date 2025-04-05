@@ -31,30 +31,30 @@ enum Metadata {
         extra: Cip68Extra
     }
 }
-const SEED_ID: TxOutputId = TxOutputId::new(TxId::new(#), 0)
-const ORACLE_KEYS: []PubKeyHash = []PubKeyHash{}
+const SEED_ID = TxOutputId::new(TxId::new(#), 0)
+const ORACLE_KEYS = []PubKeyHash{}
 
-const TICKER: String = "USDT"
-const NAME: String = "Bridged " + TICKER
-const DESCRIPTION: String = "Permissioned " + TICKER + " bridge operated by PBG"
-const DECIMALS: Int = 6
-const URL: String = "https://www.pbg.io"
-const LOGO: String = "https://assets.pbg.io/usdt_bridge.png"
-const NETWORK: String = "Ethereum"
-const NETWORK_ASSET_CLASS: String = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" // id of ERC-20 contract
-const RESERVES_ADDRESS: String = ""
+const TICKER = "USDT"
+const NAME = "Bridged " + TICKER
+const DESCRIPTION = "Permissioned " + TICKER + " bridge operated by PBG"
+const DECIMALS = 6
+const URL = "https://www.pbg.io"
+const LOGO = "https://assets.pbg.io/usdt_bridge.png"
+const NETWORK = "Ethereum"
+const NETWORK_ASSET_CLASS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" // id of ERC-20 contract, empty for network native token
+const RESERVES_ADDRESS = ""
 
-const ticker_bytes: ByteArray = TICKER.encode_utf8()
-const token_name: ByteArray = Cip67::fungible_token_label + ticker_bytes
-const metadata_name: ByteArray = Cip67::reference_token_label + ticker_bytes
-const state_name: ByteArray = ticker_bytes + " bridge state".encode_utf8()
+const ticker_bytes = TICKER.encode_utf8()
+const token_name = Cip67::fungible_token_label + ticker_bytes
+const metadata_name = Cip67::reference_token_label + ticker_bytes
+const state_name = "state".encode_utf8()
 
-const mph: MintingPolicyHash = MintingPolicyHash::from_script_hash(Scripts::bridge_validator)
-const token_asset_class: AssetClass = AssetClass::new(mph, token_name)
-const metadata_asset_class: AssetClass = AssetClass::new(mph, metadata_name)
-const state_asset_class: AssetClass = AssetClass::new(mph, state_name)
+const mph = MintingPolicyHash::from_script_hash(Scripts::bridge_validator)
+const token_asset_class = AssetClass::new(mph, token_name)
+const metadata_asset_class = AssetClass::new(mph, metadata_name)
+const state_asset_class = AssetClass::new(mph, state_name)
 
-const address: Address = Address::new(
+const address = Address::new(
     SpendingCredential::new_validator(
         ValidatorHash::from_script_hash(
             Scripts::registration_validator
@@ -66,40 +66,40 @@ const address: Address = Address::new(
 func validate_initialization(first_name: ByteArray, other_tokens: Map[ByteArray]Int, ) -> () {
     assert(tx.inputs.any((input: TxInput) -> {
         input.output_id == SEED_ID
-    }), "seed utxo not spent");
+    }), "seed utxo not spent")
 
     if (first_name == state_name) {
-        (second_name, qty) = other_tokens.head;
+        (second_name, qty) = other_tokens.head
 
-        assert(second_name == metadata_name, "second token isn't metadata token");
+        assert(second_name == metadata_name, "second token isn't metadata token")
         assert(qty == 1, "not exactly one metadata token minted")
     } else if (first_name == metadata_name) {
-        (second_name, qty) = other_tokens.head;
+        (second_name, qty) = other_tokens.head
 
-        assert(second_name == state_name, "second token isn't state token");
+        assert(second_name == state_name, "second token isn't state token")
         assert(qty == 1, "not exactly one state token minted")
     };
 
-    assert(other_tokens.tail.is_empty(), "more than two tokens minted");
+    assert(other_tokens.tail.is_empty(), "more than two tokens minted")
 
     state_utxo = tx.outputs.find((output: TxOutput) -> {
         output.address == address
         && output.value.get_safe(state_asset_class) == 1
-    });
+    })
 
-    state = state_utxo.datum.inline.as_strictly[State];
+    state = state_utxo.datum.inline.as_strictly[State]
 
-    assert(state.token_price.top == 1, "token price not initialized to 1");
-    assert(state.token_price.bottom == 1, "token price not initialized to 1");
-    assert(state.token_supply == 0, "token supply not initialized to 0");
-    assert(state.total_token_value == 0, "total token value not initialized to 0");
+    assert(state.token_price.top == 1, "token price not initialized to 1")
+    assert(state.token_price.bottom == 1, "token price not initialized to 1")
+    assert(state.token_supply == 0, "token supply not initialized to 0")
+    assert(state.total_token_value == 0, "total token value not initialized to 0")
 
     metadata_utxo = tx.outputs.find((output: TxOutput) -> {
         output.address == address
         && output.value.get_safe(metadata_asset_class) == 1
-    });
+    })
 
-    metadata_wrapper = metadata_utxo.datum.inline.as_strictly[Metadata];
+    metadata_wrapper = metadata_utxo.datum.inline.as_strictly[Metadata]
     assert(metadata_wrapper == Metadata::Cip68{
         MetadataContent{
             NAME,
@@ -120,72 +120,73 @@ func validate_initialization(first_name: ByteArray, other_tokens: Map[ByteArray]
 func signed_by_quorum() -> Bool {
     n_signers = ORACLE_KEYS.fold((n_signers: Int, key: PubKeyHash) -> {
         n_signers + tx.is_signed_by(key).to_int()
-    }, 0);
+    }, 0)
 
     n_signers > (ORACLE_KEYS.length/2)
 }
 
 func validate_metadata_update(input: TxInput) -> () {
-    input_metadata_wrapper = input.datum.inline.as[Metadata];
+    input_metadata_wrapper = input.datum.inline.as[Metadata]
     output_metadata_utxo = tx.outputs.find((output: TxOutput) -> {
         output.address == address
         && output.value.get_safe(metadata_asset_class) > 0
-    });
-    output_metadata_wrapper = output_metadata_utxo.datum.inline.as_strictly[Metadata];
+    })
+    output_metadata_wrapper = output_metadata_utxo.datum.inline.as_strictly[Metadata]
 
-    assert(signed_by_quorum(), "not signed by majority of oracle participants");
+    assert(signed_by_quorum(), "not signed by majority of oracle participants")
 
     (input_metadata_wrapper, output_metadata_wrapper).switch{
         (Cip68{metadata0, version0, extra0}, Cip68{metadata1, version1, extra1}) => {
-            assert(metadata1.decimals == metadata0.decimals, "metadata decimals changed");
-            assert(metadata1.ticker == metadata0.ticker, "metadata ticker changed");
-            assert(metadata1.network == metadata0.network, "metadata network changed");
-            assert(metadata1.asset_class == metadata0.asset_class, "metadata asset class changed");
-            assert(metadata1.reserves_address == metadata0.reserves_address, "metadata reserves address changed");
-            assert(version1 == version0, "metadata version changed");
+            assert(metadata1.decimals == metadata0.decimals, "metadata decimals changed")
+            assert(metadata1.ticker == metadata0.ticker, "metadata ticker changed")
+            assert(metadata1.network == metadata0.network, "metadata network changed")
+            assert(metadata1.asset_class == metadata0.asset_class, "metadata asset class changed")
+            assert(metadata1.reserves_address == metadata0.reserves_address, "metadata reserves address changed")
+            assert(version1 == version0, "metadata version changed")
             assert(extra1 == extra0, "metadata extra changed")
         }
     }
 }
 
 func validate_mint_tokens(R: Int, state0: State, state1: State, n: Int) -> () {
-    p = state1.token_price;
-    assert(p == state0.token_price, "token price changed");
-    assert((n * p).ceil() <= R - state0.total_token_value, "minted too many tokens");
+    p = state1.token_price
+    assert(p == state0.token_price, "token price changed")
+    assert((n * p).ceil() <= R - state0.total_token_value, "minted too many tokens")
     assert(signed_by_quorum(), "not signed by majority of oracle participants")
 }
 
 func validate_burn_tokens(state0: State, state1: State) -> () {
-    p = state1.token_price;
+    p = state1.token_price
     assert(p == state0.token_price, "token price changed")
 }
 
 func validate_price_update(R: Int, state0: State, state1: State) -> () {
-    p1 = state1.token_price;
-    p0 = state0.token_price;
+    p1 = state1.token_price
+    p0 = state0.token_price
 
-    reserves_over_supply = Ratio::new(R, state1.token_supply);
+    reserves_over_supply = Ratio::new(R, state1.token_supply)
 
     if (reserves_over_supply < p0) {
         assert(p1 == reserves_over_supply, "token price not equal to worst price")
     } else {
         assert(p1 == p0, "token price changed")
-    };
+    }
+
     assert(signed_by_quorum(), "not signed by majority of oracle participants")
 }
 
 // validates that tokens are minted, burned, or price is updated
 func validate_state_update(R: Int, input: TxInput) -> () {
-    state0 = input.datum.inline.as[State];
+    state0 = input.datum.inline.as[State]
     output_state_utxo = tx.outputs.find((output: TxOutput) -> {
         output.address == address
         && output.value.get_safe(state_asset_class) > 0
-    });
-    state1 = output_state_utxo.datum.inline.as_strictly[State];
-    n = tx.minted.get_safe(token_asset_class);
+    })
+    state1 = output_state_utxo.datum.inline.as_strictly[State]
+    n = tx.minted.get_safe(token_asset_class)
 
-    assert((state1.token_supply - state0.token_supply) == n, "token supply not updated correctly");
-    assert(state1.total_token_value == (state1.token_price * state1.token_supply).ceil(), "total token value not updated correctly");
+    assert((state1.token_supply - state0.token_supply) == n, "token supply not updated correctly")
+    assert(state1.total_token_value == (state1.token_price * state1.token_supply).ceil(), "total token value not updated correctly")
 
     if (n > 0) {
         validate_mint_tokens(R, state0, state1, n)
@@ -199,16 +200,16 @@ func validate_state_update(R: Int, input: TxInput) -> () {
 func main(args: MixedArgs) -> () {
     args.switch{
         s: Spending => {
-            R = s.redeemer.as[Int]; // the redeemer arg is always the reserve count
-            utxo = get_current_input();
-            tokens = utxo.value.get_policy(mph);
+            R = s.redeemer.as[Int] // the redeemer arg is always the reserve count
+            utxo = get_current_input()
+            tokens = utxo.value.get_policy(mph)
 
             if (tokens.is_empty()) {
                 // UTxOs that don't contain any tokens from current policy can always be spent.
                 // This can be used to remove garbage.
                 ()
             } else {
-                (name, _) = tokens.head;
+                (name, _) = tokens.head
 
                 if (name == metadata_name) {
                     validate_metadata_update(utxo)
@@ -220,13 +221,13 @@ func main(args: MixedArgs) -> () {
             }
         },
         Other => {
-            tokens = tx.minted.get_policy(mph);
+            tokens = tx.minted.get_policy(mph)
 
-            (name, qty) = tokens.head;
-            tail = tokens.tail;
+            (name, qty) = tokens.head
+            tail = tokens.tail
 
             if (name == token_name && qty != 0) {
-                assert(tail.is_empty(), "no other tokens can be minted or burned");
+                assert(tail.is_empty(), "no other tokens can be minted or burned")
                 assert(tx.inputs.any((input: TxInput) -> {
                     input.address == address
                     && input.value.get_safe(state_asset_class) > 0

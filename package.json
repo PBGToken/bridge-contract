@@ -1,10 +1,30 @@
 {
-  "name": "bridge-contract",
+  "name": "@pbg/bridge-contract",
   "version": "0.1.0",
   "description": "PBG's bridge contract validators for Cardano",
-  "main": "dist/index.js",
+  "type": "module",
+  "exports": {
+    "./cardano": {
+      "types": "./dist/cardano/index.d.ts",
+      "import": "./dist/cardano/index.js",
+      "require": "./dist/cardano/index.js"
+    },
+    "./ethereum": {
+      "types": "./dist/ethereum/index.d.ts",
+      "import": "./dist/ethereum/index.js",
+      "require": "./dist/ethereum/index.js"
+    }
+  },
   "scripts": {
-    "build": "npx hl2ts --out-dir ./dist"
+    "build": "npm run build:cardano",
+    "build:cardano": "npx hl2ts --out-dir ./dist/cardano",
+    "build:ethereum": "npm run build:ethereum:bin && npm run build:ethereum:bundle",
+    "build:ethereum:bin": "npx solc -o ./dist/ethereum --bin --optimize ./src/ethereum/ERC20MultisigWithdrawals.sol",
+    "build:ethereum:bundle": "node ./bundle_ethereum.js",
+    "co:login": "aws codeartifact login --tool npm --repository pbg --domain pbg --domain-owner 198334355085 --profile pbg --region us-east-1"
+  },
+  "publishConfig": {
+    "registry": "https://pbg-198334355085.d.codeartifact.us-east-1.amazonaws.com/npm/pbg/"
   },
   "repository": {
     "type": "git",
@@ -17,7 +37,8 @@
   },
   "homepage": "https://github.com/PBGToken/bridge-contract#readme",
   "dependencies": {
-    "@helios-lang/compiler": "0.17.12",
-    "@helios-lang/contract-utils": "^0.3.17"
+    "@helios-lang/compiler": "^0.17.14",
+    "@helios-lang/contract-utils": "^0.3.17",
+    "solc": "^0.8.29"
   }
 }
