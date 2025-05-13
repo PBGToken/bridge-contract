@@ -57,7 +57,7 @@ const state_asset_class = AssetClass::new(mph, state_name)
 const address = Address::new(
     SpendingCredential::new_validator(
         ValidatorHash::from_script_hash(
-            Scripts::registration_validator
+            Scripts::bridge_validator
         )
     ),
     Option[StakingCredential]::None

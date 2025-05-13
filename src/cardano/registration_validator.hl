@@ -8,6 +8,8 @@ import { get_current_input, tx } from ScriptContext
 // Newer duplicates can be destroyed by anyone.
 // Tokens minted by this policy must be sent to the address.
 
+// Update: prefer using off-chain registry maintained by the oracles.
+
 struct BridgeRegistration {
     reserves_network: String // "Bitcoin", "Ethereum", etc.
     reserves_address: String // must correspond to address format in metadata

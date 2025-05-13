@@ -1,6 +1,6 @@
 {
   "name": "@pbg/bridge-contract",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PBG's bridge contract validators for Cardano",
   "type": "module",
   "exports": {
@@ -37,7 +37,7 @@
   },
   "homepage": "https://github.com/PBGToken/bridge-contract#readme",
   "dependencies": {
-    "@helios-lang/compiler": "^0.17.14",
+    "@helios-lang/compiler": "^0.17.19",
     "@helios-lang/contract-utils": "^0.3.17",
     "solc": "^0.8.29"
   }
